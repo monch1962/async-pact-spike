@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"log"
@@ -19,10 +20,11 @@ import (
 func readEnvVars() (string, string, string, string, string, string, string, string, string, string, string, string, string, int64) {
 	timeout, err := strconv.ParseInt(os.Getenv("TIMEOUT"), 10, 0)
 	if err != nil {
-
+		timeout = 10000
 	}
-	protocol := os.Getenv("PROTOCOL")
+	protocol := strings.ToLower(os.Getenv("PROTOCOL"))
 	if protocol != "amqp" && protocol != "amqps" {
+		protocol = "amqps"
 	}
 
 	publishAmqpServer := os.Getenv("PUBLISH_AMQP_SERVER")
@@ -48,7 +50,13 @@ func readEnvVars() (string, string, string, string, string, string, string, stri
 		subscribeURISuffix = publishURISuffix
 	}
 	publishUsername := os.Getenv("PUBLISH_USERNAME")
+	if publishUsername == "" {
+		publishUsername = "guest"
+	}
 	publishPassword := os.Getenv("PUBLISH_PASSWORD")
+	if publishPassword == "" {
+		publishPassword = "guest"
+	}
 	subscribeUsername := os.Getenv("SUBSCRIBE_USERNAME")
 	if subscribeUsername == "" {
 		subscribeUsername = publishUsername
