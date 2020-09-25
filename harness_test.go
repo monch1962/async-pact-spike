@@ -19,7 +19,7 @@ func readEnvVars() (string, string, string, string, string, string, string, stri
 	if publishAmqpTCPPort == "" {
 		publishAmqpTCPPort = "5672"
 	}
-	subscribeAmqpServer := os.Getenv("SUBSCRIbE_AMQP_SERVER")
+	subscribeAmqpServer := os.Getenv("SUBSCRIBE_AMQP_SERVER")
 	if subscribeAmqpServer == "" {
 		subscribeAmqpServer = publishAmqpServer
 	}
@@ -152,9 +152,11 @@ func TestAMQP(t *testing.T) {
 		}
 		defer ch.Close()
 	}
+	defer conn.Close()
+	defer ch.Close()
 
 	responsePayload, err := RecvMsg(ch, subscribeQ)
-	if responsePayload != expectRecvPayload {
+	if expectRecvPayload != responsePayload {
 		t.Logf("Expected response '%s' doesn't match actual response '%s'\n", expectRecvPayload, responsePayload)
 		t.Fail()
 	}
