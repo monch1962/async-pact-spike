@@ -24,13 +24,13 @@ To run tests against a AMQP server on localhost in default config:
 
 or to specify AMQP server details, use something like:
 
-`$ PUBLISH_AMQP_SERVER=peacock.rmq.cloudamqp.com PUBLISH_USERNAME=edtdqjib PUBLISH_PASSWORD=ucsUTMSeTR9lQEo0cRJwCgPicoroEPwa PUBLISH_Q=abc123 PUBLISH_URI_SUFFIX=edtdqjib PUBLISH_AMQP_SERVER_TCP=5671 PROTOCOL=amqps SUBSCRIBE_Q=abc123 go test`
+`$ PUBLISH_AMQP_SERVER=peacock.rmq.cloudamqp.com PUBLISH_USERNAME=edtdqjib PUBLISH_PASSWORD=ucsUTMSeTR9lQEo0cRJwCgPicoroEPwa PUBLISH_Q=abc123 PUBLISH_URI_SUFFIX=edtdqjib PUBLISH_AMQP_SERVER_TCP=5671 PROTOCOL=amqps SUBSCRIBE_Q=abc123 TIMEOUT=10000 go test`
 
 ## To output JUnit format
 
 `$ go get -u github.com/jstemmer/go-junit-report`
 
-`$ PUBLISH_AMQP_SERVER=peacock.rmq.cloudamqp.com PUBLISH_USERNAME=edtdqjib PUBLISH_PASSWORD=ucsUTMSeTR9lQEo0cRJwCgPicoroEPwa PUBLISH_Q=abc123 PUBLISH_URI_SUFFIX=edtdqjib PUBLISH_AMQP_SERVER_TCP=5671 PROTOCOL=amqps SUBSCRIBE_Q=abc123 go test -v 2>&1 | go-junit-report`
+`$ PUBLISH_AMQP_SERVER=peacock.rmq.cloudamqp.com PUBLISH_USERNAME=edtdqjib PUBLISH_PASSWORD=ucsUTMSeTR9lQEo0cRJwCgPicoroEPwa PUBLISH_Q=abc123 PUBLISH_URI_SUFFIX=edtdqjib PUBLISH_AMQP_SERVER_TCP=5671 PROTOCOL=amqps SUBSCRIBE_Q=abc123 TIMEOUT=10000 go test -v 2>&1 | go-junit-report`
 
 ## To compile tests into a standalone executable file
 
@@ -38,8 +38,14 @@ or to specify AMQP server details, use something like:
 
 will compile all the tests into a standalone EXE called `tests`, which can be moved and executed on other hardware
 
-`$ BASE_URL=https://jsonplaceholder.typicode.com HTTP_TIMEOUT=1000 ./tests -test.v` will run the tests in verbose mode, and `$ BASE_URL=https://jsonplaceholder.typicode.com HTTP_TIMEOUT=1000 ./tests` will run them without verbose mode.
+`$ PUBLISH_AMQP_SERVER=peacock.rmq.cloudamqp.com PUBLISH_USERNAME=edtdqjib PUBLISH_PASSWORD=ucsUTMSeTR9lQEo0cRJwCgPicoroEPwa PUBLISH_Q=abc123 PUBLISH_URI_SUFFIX=edtdqjib PUBLISH_AMQP_SERVER_TCP=5671 PROTOCOL=amqps SUBSCRIBE_Q=abc123 TIMEOUT=10000 ./tests -test.v` 
+
+will run the tests in verbose mode, and 
+
+`$ PUBLISH_AMQP_SERVER=peacock.rmq.cloudamqp.com PUBLISH_USERNAME=edtdqjib PUBLISH_PASSWORD=ucsUTMSeTR9lQEo0cRJwCgPicoroEPwa PUBLISH_Q=abc123 PUBLISH_URI_SUFFIX=edtdqjib PUBLISH_AMQP_SERVER_TCP=5671 PROTOCOL=amqps SUBSCRIBE_Q=abc123 TIMEOUT=10000 ./tests` 
+
+will run them without verbose mode.
 
 Finally, to generate Junit reports from a compiled test file, 
 
-`$ BASE_URL=https://jsonplaceholder.typicode.com HTTP_TIMEOUT=1000 ./tests -test.v | go-junit-report`
+`$ PUBLISH_AMQP_SERVER=peacock.rmq.cloudamqp.com PUBLISH_USERNAME=edtdqjib PUBLISH_PASSWORD=ucsUTMSeTR9lQEo0cRJwCgPicoroEPwa PUBLISH_Q=abc123 PUBLISH_URI_SUFFIX=edtdqjib PUBLISH_AMQP_SERVER_TCP=5671 PROTOCOL=amqps SUBSCRIBE_Q=abc123 TIMEOUT=10000 ./tests -test.v | go-junit-report`
