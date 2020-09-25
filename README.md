@@ -5,9 +5,10 @@ Spike to play with Pact testing on RabbitMQ
 
 ## Environment variables
 
-There are several environment variablesthat can be configured for this tool, some of which are optional:
+There are several environment variables that can be configured for this tool, some of which are optional:
+- `PROTOCOL` (required, can only be `amqp` or `amqps`)
 - `PUBLISH_AMQP_SERVER` (default: `localhost`)
-- `PUBLISH_AMQP_SERVER_TCP` (default: `5672`)
+- `PUBLISH_AMQP_SERVER_TCP` (default: `5672` if PROTOCOL is `amqp`, or `5671` if PROTOCOL is `amqps`)
 - `PUBLISH_USERNAME` (default: `guest`)
 - `PUBLISH_PASSWORD` (default: `guest`)
 - `PUBLISH_Q` (required)
