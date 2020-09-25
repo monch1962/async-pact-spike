@@ -5,6 +5,10 @@
 # async-pact-spike
 Spike to play with Pact testing on RabbitMQ
 
+Intention is to use this code as a template with Pactical (https://github.com/monch1962/pactical). Pactical can populate code tempates from Pacts (https://pact.io), generating executable code. This template file should be able to turn a set of Pacts into a set of executable test cases for async testing against AMQP servers.
+
+As Go code generates standalone executables, the set of Pacts can generate a standalone EXE file which, when run, will test all of the interfaces defined within the set of Pacts. This EXE file can then be driven by CI.
+
 ## Environment variables
 
 There are several environment variables that can be configured for this tool, some of which are optional:
@@ -52,3 +56,8 @@ will run them without verbose mode.
 Finally, to generate Junit reports from a compiled test file, 
 
 `$ PUBLISH_AMQP_SERVER=peacock.rmq.cloudamqp.com PUBLISH_USERNAME=edtdqjib PUBLISH_PASSWORD=ucsUTMSeTR9lQEo0cRJwCgPicoroEPwa PUBLISH_Q=abc123 PUBLISH_URI_SUFFIX=edtdqjib PUBLISH_AMQP_SERVER_TCP=5671 PROTOCOL=amqps SUBSCRIBE_Q=abc123 TIMEOUT=10000 ./tests -test.v | go-junit-report`
+
+## TODO
+- support all the features of Pact (e.g. at present it only supports checking against hardcoded responses; should be able to do regex or pattern matching as supported by Pact)
+- investigate FaaS options for deployment
+- implement concurrent test execution (this is somewhat tricky for async, where responses can arrive out of sequence. One option would be to single-thread only requests that write to the same output queue, which would avoid the out-of-sequence response problem. Need to think this through further...)
