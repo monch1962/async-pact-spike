@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/streadway/amqp"
+	"github.com/remeh/sizedwaitgroup"
 )
 
 /*func TestFailing(t *testing.T) {
@@ -102,6 +103,7 @@ func SendMsg(ch *amqp.Channel, queue string, payload string) (string, error) {
 
 func RecvMsg(ch *amqp.Channel, queue string, timeout int64) (string, error) {
 	log.Printf("Reading from queue '%s'\n", queue)
+	ch.Qos(1, 0, false)
 	q, err := ch.QueueDeclare(
 		queue, // name
 		false, // durable
@@ -116,7 +118,7 @@ func RecvMsg(ch *amqp.Channel, queue string, timeout int64) (string, error) {
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		true,   // auto-ack
+		false,   // auto-ack - set to false to ensure only a single message gets read off the queue at a time
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
@@ -133,6 +135,7 @@ func RecvMsg(ch *amqp.Channel, queue string, timeout int64) (string, error) {
 	for {
 		select {
 		case d := <-msgs:
+			//log.Printf("d: %v\n", d)
 			timer.Reset(duration)
 			log.Printf("Received a message: '%s'\n", d.Body)
 			msg = string(d.Body)
@@ -152,61 +155,73 @@ type PactDetail struct {
 	respBody interface{}
 }
 
-func TestAMQP(t *testing.T) {
-	protocol, publishAmqpServer, publishAmqpServerPort, publishUsername, publishPassword, publishURISuffix, subscribeAmqpServer, subscribeAmqpServerPort, subscribeURISuffix, subscribeUsername, subscribePassword, publishQ, subscribeQ, timeout := readEnvVars()
+func getAmqpChannel(uri string) (*amqp.Channel, error) {
+	conn, err := amqp.Dial(uri)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to connect to RabbitMQ: %v", err)
+	}
+	ch, err := conn.Channel()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to open a channel: %v", err)
+	}
+	return ch, nil
+}
 
-	publishAmqpURI := fmt.Sprintf("%s://%s:%s@%s:%s/%s", protocol, publishUsername, publishPassword, publishAmqpServer, publishAmqpServerPort, publishURISuffix)
+func TestAMQP(t *testing.T) {
+	protocol, publishQServer, publishQServerPort, publishUsername, publishPassword, publishURISuffix, subscribeQServer, subscribeQServerPort, subscribeURISuffix, subscribeUsername, subscribePassword, publishQ, subscribeQ, timeout := readEnvVars()
+
+	publishURI := fmt.Sprintf("%s://%s:%s@%s:%s/%s", protocol, publishUsername, publishPassword, publishQServer, publishQServerPort, publishURISuffix)
+	subscribeURI := fmt.Sprintf("%s://%s:%s@%s:%s/%s", protocol, subscribeUsername, subscribePassword, subscribeQServer, subscribeQServerPort, subscribeURISuffix)
+
+	pubCh, err := getAmqpChannel(publishURI)
+	if err != nil {
+		t.Fatalf("%v\n", err)
+	}
+
+	var subCh *amqp.Channel
+	if subscribeURI != publishURI {
+		// we're reading from a different queue server; need a different channel
+		subCh, err = getAmqpChannel(subscribeURI)
+		if err != nil {
+			t.Fatalf("%v\n", err)
+		}
+	} else {
+		// use the same channel for subscribe as for publish
+		subCh = pubCh
+	}
+	t.Logf("Publishing to %s\n", publishURI)
+	t.Logf("Subscribing to %s\n", subscribeURI)
 	///////
 	var testCases = []PactDetail{
 		{"TestA", "hello", "hello"},
+		{"TestB", "there", "there"},
+		{"TestC", "everywhere", "everywhere"},
 	}
-	sendPayload := testCases[0].reqBody
-	expectRecvPayload := testCases[0].respBody
 	///////
-	t.Logf("Publishing to %s\n", publishAmqpURI)
-	conn, err := amqp.Dial(publishAmqpURI)
-	if err != nil {
-		t.Fatalf("Failed to connect to RabbitMQ: %v\n", err)
-	}
-	defer conn.Close()
+	concurrency := 1
+	swg := sizedwaitgroup.New(concurrency)
 
-	ch, err := conn.Channel()
-	if err != nil {
-		t.Fatalf("Failed to open a channel: %v\n", err)
-	}
-	defer ch.Close()
+	for _, tc := range testCases {
+		swg.Add()
+		go func(t *testing.T, tc PactDetail) {
+			defer swg.Done()
+			t.Run(tc.testName, func(t *testing.T) {
 
-	_, err = SendMsg(ch, publishQ, sendPayload)
-	if err != nil {
-		t.Fatalf("Failed to send message '%s': %v\n", sendPayload, err)
-	}
+				_, err := SendMsg(pubCh, publishQ, tc.reqBody)
+				if err != nil {
+					t.Logf("Failed to send message '%s': %v\n", tc.reqBody, err)
+					t.Fail()
+				}
 
-	subscribeAmqpURI := fmt.Sprintf("amqps://%s:%s@%s:%s/%s", subscribeUsername, subscribePassword, subscribeAmqpServer, subscribeAmqpServerPort, subscribeURISuffix)
-	if subscribeAmqpURI != publishAmqpURI {
-		// we're reading from a different queue server; close the existing connection and open a new one
-		ch.Close()
-		conn.Close()
-		conn, err := amqp.Dial(subscribeAmqpURI)
-		if err != nil {
-			t.Fatalf("Failed to connect to RabbitMQ: %v\n", err)
-		}
-		defer conn.Close()
-
-		ch, err := conn.Channel()
-		if err != nil {
-			t.Fatalf("Failed to open a channel: %v\n", err)
-		}
-		defer ch.Close()
+				responsePayload, _ := RecvMsg(subCh, subscribeQ, timeout)
+				if tc.respBody != responsePayload {
+					t.Logf("Expected response '%s' doesn't match actual response '%s'\n", tc.respBody, responsePayload)
+					t.Fail()
+				} else {
+					t.Log("Expected payload matches actual payload")
+				}
+			})
+		}(t, tc)
 	}
-	defer conn.Close()
-	defer ch.Close()
-
-	t.Logf("Subscribing to %s\n", subscribeAmqpURI)
-	responsePayload, err := RecvMsg(ch, subscribeQ, timeout)
-	if expectRecvPayload != responsePayload {
-		t.Logf("Expected response '%s' doesn't match actual response '%s'\n", expectRecvPayload, responsePayload)
-		t.Fail()
-	} else {
-		t.Log("Expected payload matches actual payload")
-	}
+	swg.Wait()
 }
