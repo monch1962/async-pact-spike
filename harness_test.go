@@ -167,7 +167,7 @@ func getAmqpChannel(uri string) (*amqp.Channel, error) {
 	return ch, nil
 }
 
-func TestAMQP(t *testing.T) {
+func TestAMQPConsumerProvider(t *testing.T) {
 	protocol, publishQServer, publishQServerPort, publishUsername, publishPassword, publishURISuffix, subscribeQServer, subscribeQServerPort, subscribeURISuffix, subscribeUsername, subscribePassword, publishQ, subscribeQ, timeout := readEnvVars()
 
 	publishURI := fmt.Sprintf("%s://%s:%s@%s:%s/%s", protocol, publishUsername, publishPassword, publishQServer, publishQServerPort, publishURISuffix)
